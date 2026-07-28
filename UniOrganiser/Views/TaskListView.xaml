@@ -1,0 +1,95 @@
+<UserControl x:Class="UniOrganiser.Views.TaskListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignWidth="800" d:DesignHeight="600">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" Margin="0,0,0,16">
+            <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}"
+                    Content="+ Add Task" Command="{Binding AddTaskCommand}" />
+            <CheckBox DockPanel.Dock="Right" Content="Show completed" Margin="0,0,20,0"
+                      VerticalAlignment="Center" IsChecked="{Binding ShowCompleted}" />
+            <TextBlock Style="{StaticResource HeaderTextBlock}" Text="Tasks" VerticalAlignment="Center" />
+        </DockPanel>
+
+        <Grid Grid.Row="1">
+            <TextBlock Text="No tasks yet. Add one to get started."
+                       HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,12,0,0">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource MutedTextBlock}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Items.Count}" Value="0">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Items}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,8">
+                                <DockPanel>
+                                    <CheckBox DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,10,0"
+                                              IsChecked="{Binding Task.IsCompleted, Mode=OneWay}"
+                                              Command="{Binding DataContext.ToggleCompleteCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                              CommandParameter="{Binding}" />
+
+                                    <Ellipse DockPanel.Dock="Left" Width="12" Height="12" VerticalAlignment="Center"
+                                             Margin="0,0,10,0"
+                                             Fill="{Binding SubjectColourHex, Converter={StaticResource HexToBrushConverter}}" />
+
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                        <Button Content="Edit" Padding="10,4"
+                                                Command="{Binding DataContext.EditTaskCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}" />
+                                        <Button Content="Delete" Padding="10,4" Margin="8,0,0,0"
+                                                Command="{Binding DataContext.DeleteTaskCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}" />
+                                    </StackPanel>
+
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock FontSize="14" Text="{Binding Task.Title}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Task.IsCompleted}" Value="True">
+                                                            <Setter Property="TextDecorations" Value="Strikethrough" />
+                                                            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                            <TextBlock Style="{StaticResource MutedTextBlock}"
+                                                       Text="{Binding SubjectName, TargetNullValue='No subject'}" />
+                                            <TextBlock Style="{StaticResource MutedTextBlock}" Text=" · " />
+                                            <TextBlock Style="{StaticResource MutedTextBlock}"
+                                                       Text="{Binding Task.DueDate, StringFormat='ddd, d MMM'}" />
+                                            <TextBlock Style="{StaticResource MutedTextBlock}"
+                                                       Text="{Binding Task.DueTime, StringFormat=' {0:hh\\:mm}'}" />
+                                            <TextBlock Style="{StaticResource MutedTextBlock}" Text=" · " />
+                                            <TextBlock Style="{StaticResource MutedTextBlock}" Text="{Binding Task.Priority}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

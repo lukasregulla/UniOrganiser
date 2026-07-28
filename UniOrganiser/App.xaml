@@ -1,0 +1,33 @@
+<Application x:Class="UniOrganiser.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:UniOrganiser"
+             xmlns:converters="clr-namespace:UniOrganiser.Converters"
+             xmlns:vm="clr-namespace:UniOrganiser.ViewModels"
+             xmlns:views="clr-namespace:UniOrganiser.Views"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/DarkTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <converters:HexToBrushConverter x:Key="HexToBrushConverter" />
+            <converters:ColourSelectedConverter x:Key="ColourSelectedConverter" />
+            <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+            <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+            <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+            <converters:SelectedDayBorderConverter x:Key="SelectedDayBorderConverter" />
+
+            <DataTemplate DataType="{x:Type vm:TaskListViewModel}">
+                <views:TaskListView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:CalendarViewModel}">
+                <views:CalendarView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SubjectsViewModel}">
+                <views:SubjectsView />
+            </DataTemplate>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

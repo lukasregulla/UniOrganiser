@@ -1,0 +1,11 @@
+using System.Windows.Controls;
+
+namespace UniOrganiser.Views;
+
+public partial class SubjectsView : UserControl
+{
+    public SubjectsView()
+    {
+        InitializeComponent();
+    }
+}
