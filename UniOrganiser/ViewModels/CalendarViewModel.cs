@@ -35,7 +35,7 @@ public partial class CalendarViewModel : ObservableObject
     public void LoadMonth()
     {
         var firstOfMonth = DisplayedMonth;
-        var gridStart = firstOfMonth.AddDays(-(int)firstOfMonth.DayOfWeek);
+        var gridStart = firstOfMonth.AddDays(-((int)firstOfMonth.DayOfWeek + 6) % 7);
         var gridEnd = gridStart.AddDays(41);
 
         var subjects = _db.GetSubjects().ToDictionary(s => s.Id);

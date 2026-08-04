@@ -110,13 +110,13 @@
                 </Grid.RowDefinitions>
 
                 <UniformGrid Grid.Row="0" Columns="7" Margin="0,0,0,4">
-                    <TextBlock Text="Sun" Style="{StaticResource MutedTextBlock}" HorizontalAlignment="Center" />
                     <TextBlock Text="Mon" Style="{StaticResource MutedTextBlock}" HorizontalAlignment="Center" />
                     <TextBlock Text="Tue" Style="{StaticResource MutedTextBlock}" HorizontalAlignment="Center" />
                     <TextBlock Text="Wed" Style="{StaticResource MutedTextBlock}" HorizontalAlignment="Center" />
                     <TextBlock Text="Thu" Style="{StaticResource MutedTextBlock}" HorizontalAlignment="Center" />
                     <TextBlock Text="Fri" Style="{StaticResource MutedTextBlock}" HorizontalAlignment="Center" />
                     <TextBlock Text="Sat" Style="{StaticResource MutedTextBlock}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Sun" Style="{StaticResource MutedTextBlock}" HorizontalAlignment="Center" />
                 </UniformGrid>
 
                 <ItemsControl Grid.Row="1" ItemsSource="{Binding Days}" ItemTemplate="{StaticResource DayCellTemplate}">
