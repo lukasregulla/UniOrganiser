@@ -28,10 +28,17 @@ public partial class TaskListViewModel : ObservableObject
 
     public void Load()
     {
+        var today = DateTime.Today;
+        var startOfWeek = today.AddDays(-((int)today.DayOfWeek + 6) % 7); // Monday-start
+        var endOfWeek = startOfWeek.AddDays(7); // exclusive
+
         var subjects = _db.GetSubjects().ToDictionary(s => s.Id);
         var tasks = _db.GetTasks()
             .Where(t => !t.IsCancelledOccurrence)
             .Where(t => ShowCompleted || !t.IsCompleted)
+            .Where(t => t.RecurrenceRuleId == null
+                || (t.DueDate >= startOfWeek && t.DueDate < endOfWeek)
+                || (t.DueDate < startOfWeek && !t.IsCompleted))
             .OrderBy(t => t.IsCompleted)
             .ThenBy(t => t.DueDate)
             .ThenBy(t => t.DueTime ?? TimeSpan.MaxValue);
