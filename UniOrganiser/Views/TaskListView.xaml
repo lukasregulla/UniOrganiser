@@ -6,6 +6,13 @@
              mc:Ignorable="d"
              d:DesignWidth="800" d:DesignHeight="600">
     <Grid Margin="24">
+        <Grid.Resources>
+            <CollectionViewSource x:Key="GroupedTasks" Source="{Binding Items}">
+                <CollectionViewSource.GroupDescriptions>
+                    <PropertyGroupDescription PropertyName="WeekLabel" />
+                </CollectionViewSource.GroupDescriptions>
+            </CollectionViewSource>
+        </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -35,7 +42,7 @@
             </TextBlock>
 
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <ItemsControl ItemsSource="{Binding Items}">
+                <ItemsControl ItemsSource="{Binding Source={StaticResource GroupedTasks}}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}"
@@ -88,6 +95,15 @@
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
+                    <ItemsControl.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}" Style="{StaticResource GroupHeaderTextBlock}" />
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </ItemsControl.GroupStyle>
                 </ItemsControl>
             </ScrollViewer>
         </Grid>

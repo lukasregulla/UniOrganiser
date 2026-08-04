@@ -43,6 +43,13 @@
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
+    <Style x:Key="GroupHeaderTextBlock" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+        <Setter Property="Margin" Value="0,16,0,8" />
+    </Style>
+
     <!-- Button -->
     <Style TargetType="Button">
         <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
