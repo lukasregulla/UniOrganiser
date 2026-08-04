@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using UniOrganiser.Models;
 using UniOrganiser.Services;
 using UniOrganiser.Views;
 
@@ -13,6 +15,7 @@ public partial class TaskListViewModel : ObservableObject
     private readonly RecurrenceService _recurrenceService;
 
     public ObservableCollection<TaskListItemViewModel> Items { get; } = [];
+    public ObservableCollection<SubjectToggle> SubjectToggles { get; } = [];
 
     [ObservableProperty]
     private bool showCompleted;
@@ -33,9 +36,14 @@ public partial class TaskListViewModel : ObservableObject
         var endOfWeek = startOfWeek.AddDays(7); // exclusive
 
         var subjects = _db.GetSubjects().ToDictionary(s => s.Id);
+        RefreshSubjectToggles(subjects.Values);
+
+        var selectedSubjectIds = SubjectToggles.Where(t => t.IsSelected).Select(t => t.SubjectId).ToHashSet();
+
         var tasks = _db.GetTasks()
             .Where(t => !t.IsCancelledOccurrence)
             .Where(t => ShowCompleted || !t.IsCompleted)
+            .Where(t => selectedSubjectIds.Count == 0 || selectedSubjectIds.Contains(t.SubjectId))
             .Where(t => t.RecurrenceRuleId == null
                 || (t.DueDate >= startOfWeek && t.DueDate < endOfWeek)
                 || (t.DueDate < startOfWeek && !t.IsCompleted))
@@ -49,6 +57,32 @@ public partial class TaskListViewModel : ObservableObject
             subjects.TryGetValue(task.SubjectId ?? -1, out var subject);
             Items.Add(new TaskListItemViewModel(task, subject));
         }
+    }
+
+    private void RefreshSubjectToggles(IEnumerable<Subject> subjects)
+    {
+        var previouslySelected = SubjectToggles.Where(t => t.IsSelected).Select(t => t.SubjectId).ToHashSet();
+
+        foreach (var toggle in SubjectToggles)
+            toggle.PropertyChanged -= OnSubjectToggleChanged;
+        SubjectToggles.Clear();
+
+        SubjectToggles.Add(new SubjectToggle(null, "No subject", null) { IsSelected = previouslySelected.Contains(null) });
+        foreach (var subject in subjects.OrderBy(s => s.Name))
+        {
+            SubjectToggles.Add(new SubjectToggle(subject.Id, subject.Name, subject.ColourHex)
+            {
+                IsSelected = previouslySelected.Contains(subject.Id)
+            });
+        }
+
+        foreach (var toggle in SubjectToggles)
+            toggle.PropertyChanged += OnSubjectToggleChanged;
+    }
+
+    private void OnSubjectToggleChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SubjectToggle.IsSelected)) Load();
     }
 
     [RelayCommand]
