@@ -4,7 +4,7 @@ namespace UniOrganiser.Services;
 
 public class RecurrenceService(DatabaseService db)
 {
-    private const int MaterialisationWindowDays = 56;
+    private const int MaterialisationWindowDays = 84;
 
     private static readonly Dictionary<string, DayOfWeek> DayAbbreviations = new(StringComparer.OrdinalIgnoreCase)
     {
