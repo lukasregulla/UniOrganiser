@@ -1,30 +1,125 @@
-<Window x:Class="UniOrganiser.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:UniOrganiser"
-        mc:Ignorable="d"
-        Style="{StaticResource {x:Type Window}}"
-        Title="UniOrganiser" Height="750" Width="1100" MinHeight="500" MinWidth="800">
+﻿<ui:FluentWindow x:Class="UniOrganiser.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:local="clr-namespace:UniOrganiser"
+                 mc:Ignorable="d"
+                 Title="UniOrganiser"
+                 Height="750" Width="1100" MinHeight="500" MinWidth="800"
+                 Background="{DynamicResource ApplicationBackgroundBrush}"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round">
+    <ui:FluentWindow.Resources>
+        <!-- Plain Buttons, not grouped RadioButtons: a WPF radio group auto-selects the
+             item that receives keyboard focus and raises Click, so merely activating the
+             window would fire a navigation command and switch tabs. The active state is
+             driven off the ViewModel's IsXxxActive flag via Tag instead. -->
+        <Style x:Key="NavBarItem" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="Fill"
+                                    Background="Transparent"
+                                    CornerRadius="{DynamicResource ControlCornerRadius}">
+                                <ContentPresenter Margin="16,8" VerticalAlignment="Center" />
+                            </Border>
+                            <Border x:Name="Indicator"
+                                    Height="3"
+                                    CornerRadius="2"
+                                    Margin="8,0"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Bottom"
+                                    Background="Transparent" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Fill" Property="Background"
+                                        Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                            </Trigger>
+                            <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="True">
+                                <Setter TargetName="Fill" Property="Background"
+                                        Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                <Setter TargetName="Indicator" Property="Background"
+                                        Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </ui:FluentWindow.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}"
-                BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal" Margin="16,0,0,0">
-                <RadioButton Content="Tasks" GroupName="MainTabs" Style="{StaticResource TabRadioButton}"
-                             IsChecked="{Binding IsTasksActive}" Command="{Binding ShowTasksCommand}" />
-                <RadioButton Content="Calendar" GroupName="MainTabs" Style="{StaticResource TabRadioButton}"
-                             IsChecked="{Binding IsCalendarActive}" Command="{Binding ShowCalendarCommand}" />
-                <RadioButton Content="Subjects" GroupName="MainTabs" Style="{StaticResource TabRadioButton}"
-                             IsChecked="{Binding IsSubjectsActive}" Command="{Binding ShowSubjectsCommand}" />
-            </StackPanel>
-        </Border>
+        <ui:TitleBar Grid.Row="0" Title="UniOrganiser">
+            <ui:TitleBar.Icon>
+                <ui:SymbolIcon Symbol="BookOpen24" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
 
-        <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}" />
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="0,1,0,1"
+                    Padding="8">
+                <StackPanel Orientation="Horizontal">
+                    <Button Style="{StaticResource NavBarItem}"
+                            Tag="{Binding IsTasksActive}"
+                            AutomationProperties.Name="Tasks"
+                            Command="{Binding ShowTasksCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="TaskListSquareLtr24" Margin="0,0,8,0" />
+                            <TextBlock Text="Tasks" Style="{StaticResource BodyTextBlockStyle}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Style="{StaticResource NavBarItem}"
+                            Tag="{Binding IsCalendarActive}"
+                            AutomationProperties.Name="Calendar"
+                            Command="{Binding ShowCalendarCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="CalendarLtr24" Margin="0,0,8,0" />
+                            <TextBlock Text="Calendar" Style="{StaticResource BodyTextBlockStyle}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Style="{StaticResource NavBarItem}"
+                            Tag="{Binding IsSubjectsActive}"
+                            AutomationProperties.Name="Subjects"
+                            Command="{Binding ShowSubjectsCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="TagMultiple24" Margin="0,0,8,0" />
+                            <TextBlock Text="Subjects" Style="{StaticResource BodyTextBlockStyle}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}" />
+        </Grid>
     </Grid>
-</Window>
+</ui:FluentWindow>
+

@@ -1,9 +1,9 @@
-using System.Windows;
 using UniOrganiser.ViewModels;
+using Wpf.Ui.Controls;
 
 namespace UniOrganiser
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow : FluentWindow
     {
         public MainWindow()
         {

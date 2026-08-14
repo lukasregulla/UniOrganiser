@@ -1,9 +1,9 @@
-using System.Windows;
 using UniOrganiser.ViewModels;
+using Wpf.Ui.Controls;
 
 namespace UniOrganiser.Views;
 
-public partial class TaskEditDialog : Window
+public partial class TaskEditDialog : FluentWindow
 {
     public TaskEditDialog(TaskEditViewModel viewModel)
     {

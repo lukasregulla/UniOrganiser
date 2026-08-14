@@ -1,5 +1,6 @@
 using System.Windows;
 using UniOrganiser.Services;
+using Wpf.Ui.Appearance;
 
 namespace UniOrganiser
 {
@@ -11,6 +12,11 @@ namespace UniOrganiser
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            ApplicationThemeManager.Apply(
+                ApplicationTheme.Dark,
+                Wpf.Ui.Controls.WindowBackdropType.Mica,
+                updateAccent: true);
+
             Db = new DatabaseService();
             Recurrence = new RecurrenceService(Db);
             Recurrence.MaterialiseAll();

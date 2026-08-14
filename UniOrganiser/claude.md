@@ -11,7 +11,8 @@ Guidance for Claude Code when working in this repo.
 - .NET 10, C#, WPF
 - MVVM via `CommunityToolkit.Mvvm` (`[ObservableProperty]`, `[RelayCommand]` — don't hand-write `INotifyPropertyChanged` boilerplate)
 - `sqlite-net-pcl` for local SQLite storage
-- No third-party calendar/UI control libraries — the calendar grid is custom-built
+- `WPF-UI` (lepoco/wpfui) for Fluent Design styling — `ui:FluentWindow` shell, `ui:Button`/`ui:TextBox`/`ui:Card`/`ui:CardExpander`/`ui:ToggleSwitch`/`ui:SymbolIcon`, and its theme resource dictionaries. XAML namespace: `http://schemas.lepo.co/wpfui/2022/xaml`
+- No third-party *calendar* control — the calendar grid is still custom-built (`ItemsControl` + `UniformGrid Columns="7"`)
 - No web frameworks, no ASP.NET, no external services
 
 ## Project structure
@@ -21,8 +22,12 @@ Guidance for Claude Code when working in this repo.
 /ViewModels  -> one per View, suffixed ViewModel.cs
 /Views       -> XAML views, suffixed View.xaml (dialogs suffixed Dialog.xaml)
 /Services    -> DatabaseService.cs is the single source of truth for all SQLite reads/writes
-/Themes      -> DarkTheme.xaml, resource dictionary for colours/styles
+/Converters  -> IValueConverter / IMultiValueConverter helpers, registered in App.xaml
 ```
+
+There is no app-level theme dictionary. Colours and typography come from WPF-UI's
+`ui:ThemesDictionary` + `ui:ControlsDictionary`, merged in `App.xaml`. Styles used by only one
+view live in that view's own `Resources`.
 
 ## Conventions
 
@@ -39,13 +44,19 @@ Guidance for Claude Code when working in this repo.
 - No filler comments explaining obvious code
 - Prefer explicit, descriptive names over abbreviations
 - Keep XAML formatted with one attribute per line once a tag has more than ~3 attributes, for readability
-- Dark theme colours and any other shared style values live in `Themes/DarkTheme.xaml` as resources — don't hardcode hex colours directly in view XAML
-- All buttons need to be rounded
+- Never hardcode hex colours in view XAML. Use WPF-UI theme brush keys via **`DynamicResource`**, never `StaticResource` — `StaticResource` resolves once and won't follow a theme change. Common keys: `ApplicationBackgroundBrush`, `CardBackgroundFillColorDefaultBrush`, `CardStrokeColorDefaultBrush`, `ControlFillColorDefaultBrush`, `TextFillColorPrimaryBrush`, `TextFillColorSecondaryBrush`, `AccentFillColorDefaultBrush`, `SystemFillColorCriticalBrush`. The one exception is user-chosen subject colours, which are data and go through `HexToBrushConverter`.
+- No hardcoded `FontSize`/`FontWeight`. Use WPF-UI typography styles: `CaptionTextBlockStyle`, `BodyTextBlockStyle`, `BodyStrongTextBlockStyle`, `SubtitleTextBlockStyle`, `TitleTextBlockStyle`.
+- Icons are `ui:SymbolIcon` (Segoe Fluent Icons), never text glyphs or emoji
+- Margins and padding in multiples of 8 (8/16/24)
+- Corner radius comes from `{DynamicResource ControlCornerRadius}` / `{DynamicResource OverlayCornerRadius}` — don't hand-pick radii
+- The app is dark-only (`ApplicationThemeManager.Apply(ApplicationTheme.Dark, ...)` in `App.xaml.cs`). The `DynamicResource` rule above still holds so a light mode stays cheap to add.
+- Don't override WPF-UI's built-in hover/pressed states with custom triggers unless there's a real need
+
 ## Build order
 
 Work incrementally in this order, and treat each step as a checkpoint rather than doing everything in one pass:
 
-1. Scaffold project, NuGet packages, dark theme resource dictionary
+1. Scaffold project, NuGet packages, WPF-UI theme dictionaries in `App.xaml`
 2. `DatabaseService` + SQLite init, CRUD for `Subject` and `TaskItem`
 3. `SubjectsView` (add/edit/delete, colour swatch picker)
 4. `TaskListView` (list, add/edit dialog, complete/delete, subject colour tag)

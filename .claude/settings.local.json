@@ -1,7 +1,27 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -v '/\\\\.vs/')"
+      "Bash(grep -v '/\\\\.vs/')",
+      "PowerShell(dotnet add *)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(dotnet build *)",
+      "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\drive.ps1 -Action start)",
+      "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\drive.ps1 -Action shot -Shot \"01-tasks\")",
+      "PowerShell(git *)",
+      "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\drive.ps1 -Action shot -Shot \"00-original\")",
+      "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\passive.ps1)",
+      "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\activate.ps1)",
+      "PowerShell(Stop-Process *)",
+      "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\ui.ps1 -Action shot -Shot \"21-calendar\" -Title \"UniOrganiser\")",
+      "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\cap.ps1 -Action info)",
+      "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\cap.ps1 -Action shot -Shot \"30-tasks\")",
+      "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\cap.ps1 -Action click -X 134 -Y 201)",
+      "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\cap.ps1 -Action shot -Shot \"31-calendar\")",
+      "PowerShell(Out-Null *)",
+      "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\uia.ps1 -Action tree)",
+      "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\uia.ps1 -Action invoke -Index 57)",
+      "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\uia.ps1 -Action windows)",
+      "PowerShell(Get-Process *)"
     ]
   }
 }

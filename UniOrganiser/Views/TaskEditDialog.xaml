@@ -1,95 +1,147 @@
-<Window x:Class="UniOrganiser.Views.TaskEditDialog"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        mc:Ignorable="d"
-        Style="{StaticResource {x:Type Window}}"
-        Title="{Binding DialogTitle}" Height="720" Width="420"
-        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
-        ShowInTaskbar="False">
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24">
-        <StackPanel>
-            <TextBlock Text="{Binding DialogTitle}" Style="{StaticResource HeaderTextBlock}" Margin="0,0,0,16" />
+<ui:FluentWindow x:Class="UniOrganiser.Views.TaskEditDialog"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 mc:Ignorable="d"
+                 Title="{Binding DialogTitle}"
+                 Height="720" Width="440"
+                 WindowStartupLocation="CenterOwner"
+                 ResizeMode="NoResize"
+                 ShowInTaskbar="False"
+                 Background="{DynamicResource ApplicationBackgroundBrush}"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round">
+    <ui:FluentWindow.Resources>
+        <Style x:Key="FieldLabel" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+    </ui:FluentWindow.Resources>
 
-            <TextBlock Text="Title" Style="{StaticResource MutedTextBlock}" Margin="0,0,0,4" />
-            <TextBox Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12" />
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-            <TextBlock Text="Description (optional)" Style="{StaticResource MutedTextBlock}" Margin="0,0,0,4" />
-            <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
-                     AcceptsReturn="True" TextWrapping="Wrap" Height="60" Margin="0,0,0,12" />
+        <ui:TitleBar Grid.Row="0"
+                     Title="{Binding DialogTitle}"
+                     ShowMaximize="False"
+                     ShowMinimize="False" />
 
-            <TextBlock Text="Subject" Style="{StaticResource MutedTextBlock}" Margin="0,0,0,4" />
-            <ComboBox ItemsSource="{Binding SubjectOptions}" SelectedItem="{Binding SelectedSubjectOption}"
-                      DisplayMemberPath="Name" Margin="0,0,0,12" />
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="24,8,24,24">
+            <StackPanel>
+                <TextBlock Text="Title" Style="{StaticResource FieldLabel}" />
+                <ui:TextBox Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}"
+                            PlaceholderText="What needs doing?"
+                            Margin="0,0,0,16" />
 
-            <Grid Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="12" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+                <TextBlock Text="Description (optional)" Style="{StaticResource FieldLabel}" />
+                <ui:TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
+                            PlaceholderText="Any extra detail"
+                            AcceptsReturn="True" TextWrapping="Wrap" Height="80"
+                            Margin="0,0,0,16" />
 
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="Due date" Style="{StaticResource MutedTextBlock}" Margin="0,0,0,4" />
-                    <DatePicker SelectedDate="{Binding DueDate}" />
+                <TextBlock Text="Subject" Style="{StaticResource FieldLabel}" />
+                <ComboBox ItemsSource="{Binding SubjectOptions}" SelectedItem="{Binding SelectedSubjectOption}"
+                          DisplayMemberPath="Name" HorizontalAlignment="Stretch" Margin="0,0,0,16" />
+
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Due date" Style="{StaticResource FieldLabel}" />
+                        <!-- Native DatePicker, not ui:CalendarDatePicker: WPF-UI styles this one
+                             (DefaultDatePickerStyle) and CalendarDatePicker renders blank when its
+                             Date is set by a binding before the template is applied. -->
+                        <DatePicker SelectedDate="{Binding DueDate}"
+                                    FirstDayOfWeek="Monday"
+                                    SelectedDateFormat="Short"
+                                    HorizontalAlignment="Stretch" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Due time (HH:mm, optional)" Style="{StaticResource FieldLabel}" />
+                        <ui:TextBox Text="{Binding DueTimeText, UpdateSourceTrigger=PropertyChanged}"
+                                    PlaceholderText="09:00" />
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Text="Priority" Style="{StaticResource FieldLabel}" />
+                <ComboBox ItemsSource="{Binding PriorityOptions}" SelectedItem="{Binding Priority}"
+                          HorizontalAlignment="Stretch" Margin="0,0,0,16" />
+
+                <ui:ToggleSwitch Content="Completed" IsChecked="{Binding IsCompleted}" Margin="0,0,0,24" />
+
+                <ui:CardExpander IsExpanded="{Binding IsPartOfExistingSeries, Mode=OneWay}"
+                                 ContentPadding="16" Margin="0,0,0,16">
+                    <ui:CardExpander.Icon>
+                        <ui:SymbolIcon Symbol="ArrowRepeatAll24" />
+                    </ui:CardExpander.Icon>
+                    <ui:CardExpander.Header>
+                        <TextBlock Text="Repeat" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    </ui:CardExpander.Header>
+
+                    <StackPanel>
+                        <ComboBox ItemsSource="{Binding RepeatOptions}" SelectedItem="{Binding SelectedRepeatOption}"
+                                  HorizontalAlignment="Stretch" Margin="0,0,0,16" />
+
+                        <StackPanel Visibility="{Binding ShowDaysPicker, Converter={StaticResource BoolToVisibilityConverter}}"
+                                    Margin="0,0,0,16">
+                            <TextBlock Text="On these days" Style="{StaticResource FieldLabel}" />
+                            <ItemsControl ItemsSource="{Binding DayToggles}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected}"
+                                                  Margin="0,0,16,8" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <StackPanel Visibility="{Binding ShowRepeatEndDate, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <TextBlock Text="Repeat ends (optional)" Style="{StaticResource FieldLabel}" />
+                            <DatePicker SelectedDate="{Binding RepeatEndDate}"
+                                        FirstDayOfWeek="Monday"
+                                        SelectedDateFormat="Short"
+                                        HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </StackPanel>
+                </ui:CardExpander>
+
+                <StackPanel Visibility="{Binding IsPartOfExistingSeries, Converter={StaticResource BoolToVisibilityConverter}}"
+                            Margin="0,0,0,16">
+                    <TextBlock Text="Apply changes to" Style="{StaticResource FieldLabel}" />
+                    <RadioButton Content="This occurrence only" GroupName="Scope" HorizontalAlignment="Left"
+                                 IsChecked="{Binding ApplyToAllFuture, Converter={StaticResource InverseBooleanConverter}}" />
+                    <RadioButton Content="This and all future occurrences" GroupName="Scope" HorizontalAlignment="Left"
+                                 Margin="0,8,0,0"
+                                 IsChecked="{Binding ApplyToAllFuture}" />
                 </StackPanel>
 
-                <StackPanel Grid.Column="2">
-                    <TextBlock Text="Due time (optional, HH:mm)" Style="{StaticResource MutedTextBlock}" Margin="0,0,0,4" />
-                    <TextBox Text="{Binding DueTimeText, UpdateSourceTrigger=PropertyChanged}" />
+                <TextBlock Text="{Binding ValidationError}"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                           TextWrapping="Wrap" Margin="0,0,0,16"
+                           Visibility="{Binding ValidationError, Converter={StaticResource NullToVisibilityConverter}}" />
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <ui:Button Content="Cancel" Command="{Binding CancelCommand}" Margin="0,0,8,0" />
+                    <ui:Button Content="Save" Appearance="Primary" Command="{Binding SaveCommand}" />
                 </StackPanel>
-            </Grid>
-
-            <TextBlock Text="Priority" Style="{StaticResource MutedTextBlock}" Margin="0,0,0,4" />
-            <ComboBox ItemsSource="{Binding PriorityOptions}" SelectedItem="{Binding Priority}" Margin="0,0,0,12" />
-
-            <CheckBox Content="Completed" IsChecked="{Binding IsCompleted}" Margin="0,0,0,12" />
-
-            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Margin="0,0,0,12" />
-
-            <TextBlock Text="Repeat" Style="{StaticResource MutedTextBlock}" Margin="0,0,0,4" />
-            <ComboBox ItemsSource="{Binding RepeatOptions}" SelectedItem="{Binding SelectedRepeatOption}" Margin="0,0,0,12" />
-
-            <StackPanel Visibility="{Binding ShowDaysPicker, Converter={StaticResource BoolToVisibilityConverter}}"
-                        Margin="0,0,0,12">
-                <TextBlock Text="On these days" Style="{StaticResource MutedTextBlock}" Margin="0,0,0,4" />
-                <ItemsControl ItemsSource="{Binding DayToggles}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected}" Margin="0,0,12,0" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
             </StackPanel>
-
-            <StackPanel Visibility="{Binding ShowRepeatEndDate, Converter={StaticResource BoolToVisibilityConverter}}"
-                        Margin="0,0,0,12">
-                <TextBlock Text="Repeat ends (optional)" Style="{StaticResource MutedTextBlock}" Margin="0,0,0,4" />
-                <DatePicker SelectedDate="{Binding RepeatEndDate}" />
-            </StackPanel>
-
-            <StackPanel Visibility="{Binding IsPartOfExistingSeries, Converter={StaticResource BoolToVisibilityConverter}}"
-                        Margin="0,0,0,12">
-                <TextBlock Text="Apply changes to" Style="{StaticResource MutedTextBlock}" Margin="0,0,0,4" />
-                <RadioButton Content="This occurrence only" GroupName="Scope" HorizontalAlignment="Left"
-                             IsChecked="{Binding ApplyToAllFuture, Converter={StaticResource InverseBooleanConverter}}" />
-                <RadioButton Content="This and all future occurrences" GroupName="Scope" HorizontalAlignment="Left" Margin="0,4,0,0"
-                             IsChecked="{Binding ApplyToAllFuture}" />
-            </StackPanel>
-
-            <TextBlock Text="{Binding ValidationError}" Foreground="#E06C75" TextWrapping="Wrap" Margin="0,0,0,12"
-                       Visibility="{Binding ValidationError, Converter={StaticResource NullToVisibilityConverter}}" />
-
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="Cancel" Command="{Binding CancelCommand}" Margin="0,0,8,0" />
-                <Button Content="Save" Style="{StaticResource AccentButton}" Command="{Binding SaveCommand}" />
-            </StackPanel>
-        </StackPanel>
-    </ScrollViewer>
-</Window>
+        </ScrollViewer>
+    </Grid>
+</ui:FluentWindow>

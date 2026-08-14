@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d"
              d:DesignWidth="800" d:DesignHeight="600">
     <Grid Margin="24">
@@ -20,16 +21,31 @@
         </Grid.RowDefinitions>
 
         <DockPanel Grid.Row="0" Margin="0,0,0,16">
-            <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}"
-                    Content="+ Add Task" Command="{Binding AddTaskCommand}" />
-            <CheckBox DockPanel.Dock="Right" Content="Show completed" Margin="0,0,20,0"
-                      VerticalAlignment="Center" IsChecked="{Binding ShowCompleted}" />
-            <TextBlock Style="{StaticResource HeaderTextBlock}" Text="Tasks" VerticalAlignment="Center" />
+            <ui:Button DockPanel.Dock="Right"
+                       Appearance="Primary"
+                       Content="Add Task"
+                       Command="{Binding AddTaskCommand}">
+                <ui:Button.Icon>
+                    <ui:SymbolIcon Symbol="Add24" />
+                </ui:Button.Icon>
+            </ui:Button>
+
+            <ui:ToggleSwitch DockPanel.Dock="Right"
+                             Content="Show completed"
+                             Margin="0,0,16,0"
+                             VerticalAlignment="Center"
+                             IsChecked="{Binding ShowCompleted}" />
+
+            <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Tasks" VerticalAlignment="Center" />
         </DockPanel>
 
         <DockPanel Grid.Row="1" Margin="0,0,0,16">
-            <TextBlock DockPanel.Dock="Left" Style="{StaticResource MutedTextBlock}" Text="Subjects:"
-                       VerticalAlignment="Center" Margin="0,0,10,0" />
+            <TextBlock DockPanel.Dock="Left"
+                       Text="Subjects"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       VerticalAlignment="Center"
+                       Margin="0,0,16,0" />
             <ItemsControl ItemsSource="{Binding SubjectToggles}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -38,9 +54,9 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <CheckBox Margin="0,0,14,0" IsChecked="{Binding IsSelected}">
+                        <CheckBox Margin="0,0,16,0" IsChecked="{Binding IsSelected}">
                             <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,6,0"
+                                <Ellipse Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,8,0"
                                          Fill="{Binding ColourHex, Converter={StaticResource HexToBrushConverter}}" />
                                 <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
                             </StackPanel>
@@ -52,9 +68,10 @@
 
         <Grid Grid.Row="2">
             <TextBlock Text="No tasks yet. Add one to get started."
-                       HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,12,0,0">
+                       HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,16,0,0"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                 <TextBlock.Style>
-                    <Style TargetType="TextBlock" BasedOn="{StaticResource MutedTextBlock}">
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
                         <Setter Property="Visibility" Value="Collapsed" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding Items.Count}" Value="0">
@@ -69,61 +86,86 @@
                 <ItemsControl ItemsSource="{Binding Source={StaticResource GroupedTasks}}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}"
-                                    BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,0,0,8">
+                            <ui:Card Margin="0,0,0,8" Padding="16">
                                 <DockPanel>
-                                    <CheckBox DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,10,0"
+                                    <CheckBox DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,8,0"
                                               IsChecked="{Binding Task.IsCompleted, Mode=OneWay}"
-                                              Command="{Binding DataContext.ToggleCompleteCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                              Command="{Binding DataContext.ToggleCompleteCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
                                               CommandParameter="{Binding}" />
 
                                     <Ellipse DockPanel.Dock="Left" Width="12" Height="12" VerticalAlignment="Center"
-                                             Margin="0,0,10,0"
+                                             Margin="0,0,16,0"
                                              Fill="{Binding SubjectColourHex, Converter={StaticResource HexToBrushConverter}}" />
 
-                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                        <Button Content="Edit" Padding="10,4"
-                                                Command="{Binding DataContext.EditTaskCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                CommandParameter="{Binding}" />
-                                        <Button Content="Delete" Padding="10,4" Margin="8,0,0,0"
-                                                Command="{Binding DataContext.DeleteTaskCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                CommandParameter="{Binding}" />
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:Button Appearance="Secondary"
+                                                   ToolTip="Edit"
+                                                   AutomationProperties.Name="Edit task"
+                                                   Command="{Binding DataContext.EditTaskCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                                   CommandParameter="{Binding}">
+                                            <ui:Button.Icon>
+                                                <ui:SymbolIcon Symbol="Edit24" />
+                                            </ui:Button.Icon>
+                                        </ui:Button>
+                                        <ui:Button Appearance="Secondary"
+                                                   ToolTip="Delete"
+                                                   AutomationProperties.Name="Delete task"
+                                                   Margin="8,0,0,0"
+                                                   Command="{Binding DataContext.DeleteTaskCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}"
+                                                   CommandParameter="{Binding}">
+                                            <ui:Button.Icon>
+                                                <ui:SymbolIcon Symbol="Delete24" />
+                                            </ui:Button.Icon>
+                                        </ui:Button>
                                     </StackPanel>
 
                                     <StackPanel VerticalAlignment="Center">
-                                        <TextBlock FontSize="14" Text="{Binding Task.Title}">
+                                        <TextBlock Text="{Binding Task.Title}" TextTrimming="CharacterEllipsis">
                                             <TextBlock.Style>
-                                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding Task.IsCompleted}" Value="True">
                                                             <Setter Property="TextDecorations" Value="Strikethrough" />
-                                                            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+                                                            <Setter Property="Foreground"
+                                                                    Value="{DynamicResource TextFillColorSecondaryBrush}" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </TextBlock.Style>
                                         </TextBlock>
-                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                            <TextBlock Style="{StaticResource MutedTextBlock}"
-                                                       Text="{Binding SubjectName, TargetNullValue='No subject'}" />
-                                            <TextBlock Style="{StaticResource MutedTextBlock}" Text=" · " />
-                                            <TextBlock Style="{StaticResource MutedTextBlock}"
-                                                       Text="{Binding Task.DueDate, StringFormat='ddd, d MMM'}" />
-                                            <TextBlock Style="{StaticResource MutedTextBlock}"
-                                                       Text="{Binding Task.DueTime, StringFormat=' {0:hh\\:mm}'}" />
-                                            <TextBlock Style="{StaticResource MutedTextBlock}" Text=" · " />
-                                            <TextBlock Style="{StaticResource MutedTextBlock}" Text="{Binding Task.Priority}" />
+                                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                            <StackPanel.Resources>
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+                                                    <Setter Property="Foreground"
+                                                            Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                    <Setter Property="Margin" Value="0,0,16,0" />
+                                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                                </Style>
+                                            </StackPanel.Resources>
+                                            <TextBlock Text="{Binding SubjectName, TargetNullValue='No subject'}" />
+                                            <TextBlock Text="{Binding Task.DueDate, StringFormat='ddd, d MMM'}" Margin="0,0,8,0" />
+                                            <TextBlock Text="{Binding Task.DueTime, StringFormat='{}{0:hh\\:mm}'}" />
+                                            <TextBlock Text="{Binding Task.Priority}" />
+                                            <ui:SymbolIcon Symbol="ArrowRepeatAll24"
+                                                           FontSize="14"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                           ToolTip="Repeating task"
+                                                           Visibility="{Binding IsRecurring, Converter={StaticResource BoolToVisibilityConverter}}" />
                                         </StackPanel>
                                     </StackPanel>
                                 </DockPanel>
-                            </Border>
+                            </ui:Card>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                     <ItemsControl.GroupStyle>
                         <GroupStyle>
                             <GroupStyle.HeaderTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Name}" Style="{StaticResource GroupHeaderTextBlock}" />
+                                    <TextBlock Text="{Binding Name}"
+                                               Style="{StaticResource BodyStrongTextBlockStyle}"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                               Margin="0,16,0,8" />
                                 </DataTemplate>
                             </GroupStyle.HeaderTemplate>
                         </GroupStyle>
