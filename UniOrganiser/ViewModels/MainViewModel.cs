@@ -8,7 +8,8 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly TaskListViewModel _taskListViewModel;
     private readonly CalendarViewModel _calendarViewModel;
-    private readonly SubjectsViewModel _subjectsViewModel;
+    private readonly TagsViewModel _tagsViewModel;
+    private readonly SemestersViewModel _semestersViewModel;
 
     [ObservableProperty]
     private object? currentViewModel;
@@ -20,13 +21,17 @@ public partial class MainViewModel : ObservableObject
     private bool isCalendarActive;
 
     [ObservableProperty]
-    private bool isSubjectsActive;
+    private bool isTagsActive;
+
+    [ObservableProperty]
+    private bool isSemestersActive;
 
     public MainViewModel(DatabaseService db, RecurrenceService recurrenceService)
     {
         _taskListViewModel = new TaskListViewModel(db, recurrenceService);
         _calendarViewModel = new CalendarViewModel(db, recurrenceService);
-        _subjectsViewModel = new SubjectsViewModel(db);
+        _tagsViewModel = new TagsViewModel(db);
+        _semestersViewModel = new SemestersViewModel(db, recurrenceService);
 
         CurrentViewModel = _taskListViewModel;
     }
@@ -36,7 +41,7 @@ public partial class MainViewModel : ObservableObject
     {
         _taskListViewModel.Load();
         CurrentViewModel = _taskListViewModel;
-        SetActiveTab(tasks: true, calendar: false, subjects: false);
+        SetActiveTab(tasks: true, calendar: false, tags: false, semesters: false);
     }
 
     [RelayCommand]
@@ -44,21 +49,30 @@ public partial class MainViewModel : ObservableObject
     {
         _calendarViewModel.LoadMonth();
         CurrentViewModel = _calendarViewModel;
-        SetActiveTab(tasks: false, calendar: true, subjects: false);
+        SetActiveTab(tasks: false, calendar: true, tags: false, semesters: false);
     }
 
     [RelayCommand]
-    private void ShowSubjects()
+    private void ShowTags()
     {
-        _subjectsViewModel.Load();
-        CurrentViewModel = _subjectsViewModel;
-        SetActiveTab(tasks: false, calendar: false, subjects: true);
+        _tagsViewModel.Load();
+        CurrentViewModel = _tagsViewModel;
+        SetActiveTab(tasks: false, calendar: false, tags: true, semesters: false);
     }
 
-    private void SetActiveTab(bool tasks, bool calendar, bool subjects)
+    [RelayCommand]
+    private void ShowSemesters()
+    {
+        _semestersViewModel.Load();
+        CurrentViewModel = _semestersViewModel;
+        SetActiveTab(tasks: false, calendar: false, tags: false, semesters: true);
+    }
+
+    private void SetActiveTab(bool tasks, bool calendar, bool tags, bool semesters)
     {
         IsTasksActive = tasks;
         IsCalendarActive = calendar;
-        IsSubjectsActive = subjects;
+        IsTagsActive = tags;
+        IsSemestersActive = semesters;
     }
 }

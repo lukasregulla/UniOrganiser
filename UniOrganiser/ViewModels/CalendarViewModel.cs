@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using UniOrganiser.Models;
 using UniOrganiser.Services;
 using UniOrganiser.Views;
 
@@ -39,6 +40,11 @@ public partial class CalendarViewModel : ObservableObject
         var gridEnd = gridStart.AddDays(41);
 
         var subjects = _db.GetSubjects().ToDictionary(s => s.Id);
+        var categories = _db.GetCategories().ToDictionary(c => c.Id);
+        var semesters = _db.GetSemesters();
+        var breaksBySemester = _db.GetAllBreaks()
+            .GroupBy(b => b.SemesterId)
+            .ToDictionary(g => g.Key, g => g.ToList());
         var tasksByDate = _db.GetTasksInRange(gridStart, gridEnd)
             .Where(t => !t.IsCancelledOccurrence)
             .GroupBy(t => t.DueDate.Date)
@@ -55,7 +61,9 @@ public partial class CalendarViewModel : ObservableObject
                 foreach (var task in dayTasks)
                 {
                     subjects.TryGetValue(task.SubjectId ?? -1, out var subject);
-                    day.TasksOnDay.Add(new TaskListItemViewModel(task, subject));
+                    categories.TryGetValue(task.CategoryId ?? -1, out var category);
+                    var weekLabel = SemesterCalendar.WeekLabel(task.DueDate, semesters, breaksBySemester);
+                    day.TasksOnDay.Add(new TaskListItemViewModel(task, subject, category, weekLabel));
                 }
             }
             Days.Add(day);
@@ -96,7 +104,7 @@ public partial class CalendarViewModel : ObservableObject
     [RelayCommand]
     private void AddTask()
     {
-        var vm = new TaskEditViewModel(_db, _recurrenceService, null, _db.GetSubjects());
+        var vm = new TaskEditViewModel(_db, _recurrenceService, null, _db.GetSubjects(), _db.GetCategories());
         if (SelectedDay is not null) vm.DueDate = SelectedDay.Date;
         var dialog = new TaskEditDialog(vm) { Owner = Application.Current.MainWindow };
         if (dialog.ShowDialog() == true) LoadMonth();
@@ -105,7 +113,7 @@ public partial class CalendarViewModel : ObservableObject
     [RelayCommand]
     private void EditTask(TaskListItemViewModel item)
     {
-        var vm = new TaskEditViewModel(_db, _recurrenceService, item.Task, _db.GetSubjects());
+        var vm = new TaskEditViewModel(_db, _recurrenceService, item.Task, _db.GetSubjects(), _db.GetCategories());
         var dialog = new TaskEditDialog(vm) { Owner = Application.Current.MainWindow };
         if (dialog.ShowDialog() == true) LoadMonth();
     }

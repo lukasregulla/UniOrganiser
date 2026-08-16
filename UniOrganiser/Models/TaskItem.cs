@@ -15,6 +15,9 @@ public class TaskItem
     public int? SubjectId { get; set; }
 
     [Indexed]
+    public int? CategoryId { get; set; }
+
+    [Indexed]
     public DateTime DueDate { get; set; }
 
     public TimeSpan? DueTime { get; set; }

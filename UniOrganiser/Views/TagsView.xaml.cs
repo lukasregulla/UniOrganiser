@@ -2,9 +2,9 @@ using System.Windows.Controls;
 
 namespace UniOrganiser.Views;
 
-public partial class SubjectsView : UserControl
+public partial class TagsView : UserControl
 {
-    public SubjectsView()
+    public TagsView()
     {
         InitializeComponent();
     }

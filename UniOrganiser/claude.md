@@ -18,7 +18,8 @@ Guidance for Claude Code when working in this repo.
 ## Project structure
 
 ```
-/Models      -> TaskItem.cs, Subject.cs, Priority.cs, RecurrenceRule.cs, RecurrenceFrequency.cs
+/Models      -> TaskItem.cs, Subject.cs, Category.cs, Priority.cs, RecurrenceRule.cs,
+                RecurrenceFrequency.cs, Semester.cs, SemesterBreak.cs, SemesterCalendar.cs
 /ViewModels  -> one per View, suffixed ViewModel.cs
 /Views       -> XAML views, suffixed View.xaml (dialogs suffixed Dialog.xaml)
 /Services    -> DatabaseService.cs is the single source of truth for all SQLite reads/writes
@@ -36,7 +37,9 @@ view live in that view's own `Resources`.
 - **Database**: all CRUD goes through `DatabaseService`. ViewModels never touch SQLite directly.
 - **Naming**: `TaskItem` (not `Task`, to avoid clashing with `System.Threading.Tasks.Task`).
 - **Nullable subject**: a `TaskItem` can have `SubjectId == null`, meaning "no subject" — handle this in both the UI (show as uncoloured/grey) and any queries.
-- **Recurring tasks**: a `TaskItem` with a non-null `RecurrenceRuleId` is one occurrence of a repeating series. Occurrences are materialised as individual `TaskItem` rows (don't compute recurrence on the fly in the UI) — a background/startup routine should top up a rolling window of future occurrences (e.g. next 4–8 weeks) as time passes. Completing or editing one occurrence must never affect other occurrences in the series unless the user explicitly chooses "apply to all future occurrences".
+- **Recurring tasks**: a `TaskItem` with a non-null `RecurrenceRuleId` is one occurrence of a repeating series. Occurrences are materialised as individual `TaskItem` rows (don't compute recurrence on the fly in the UI), topped up by `RecurrenceService.MaterialiseAll()` at startup and after any edit that affects a series. Completing or editing one occurrence must never affect other occurrences in the series unless the user explicitly chooses "apply to all future occurrences".
+- **Semesters**: a `RecurrenceRule` with a non-null `SemesterId` stops at that semester's `EndDate` and skips its `SemesterBreak` periods; a null `SemesterId` means a custom range governed by `RecurrenceRule.EndDate` alone, materialised over a rolling 84-day window. The semester row is the single source of truth — never snapshot its end date onto the rule, or edits stop propagating. Where both apply, the **earlier** of the semester end and `rule.EndDate` wins, which is what keeps "delete this and all future occurrences" working on a semester-bound series.
+- **Series template**: `MaterialiseAll` copies every generated field off `occurrences[0]` and skips any rule with no occurrences left, so nothing may ever delete the earliest row of a series.
 - Favour straightforward, readable code over clever abstractions. Don't add interfaces/DI/extra layers unless there's an actual need.
 
 ## Style preferences
@@ -58,7 +61,7 @@ Work incrementally in this order, and treat each step as a checkpoint rather tha
 
 1. Scaffold project, NuGet packages, WPF-UI theme dictionaries in `App.xaml`
 2. `DatabaseService` + SQLite init, CRUD for `Subject` and `TaskItem`
-3. `SubjectsView` (add/edit/delete, colour swatch picker)
+3. `TagsView` (subjects + categories: add/edit/delete, colour swatch picker)
 4. `TaskListView` (list, add/edit dialog, complete/delete, subject colour tag)
 5. Recurrence: `RecurrenceRule` CRUD, repeat option in task dialog, occurrence-generation logic
 6. `CalendarView` (month grid, tasks per day including recurring occurrences, day click, edit from calendar)

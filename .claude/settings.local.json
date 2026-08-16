@@ -21,7 +21,12 @@
       "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\uia.ps1 -Action tree)",
       "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\uia.ps1 -Action invoke -Index 57)",
       "PowerShell(& C:\\\\Projects\\\\UniOrganiser\\\\.driver\\\\uia.ps1 -Action windows)",
-      "PowerShell(Get-Process *)"
+      "PowerShell(Get-Process *)",
+      "PowerShell($db = Join-Path $env:LOCALAPPDATA 'UniOrganiser\\\\uniorganiser.db'; if \\(Test-Path $db\\) { Copy-Item $db \"$db.bak-precategory\" -Force; Get-Item \"$db.bak-precategory\" | Select-Object FullName, Length } else { Write-Output \"NO DB AT $db\" })",
+      "PowerShell($sp = \"C:\\\\Users\\\\lukas\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Projects-UniOrganiser\\\\7715de1b-290b-44da-952a-6dd0b5e16865\\\\scratchpad\"; & \"$sp\\\\scroll.ps1\" -X 700 -Y 700 -Delta -120 -Count 5 -DelayMs 150; & \"$sp\\\\capture.ps1\" -OutPath \"$sp\\\\cat-dialog-bottom2.png\")",
+      "PowerShell($sp = \"C:\\\\Users\\\\lukas\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Projects-UniOrganiser\\\\7715de1b-290b-44da-952a-6dd0b5e16865\\\\scratchpad\"; & \"$sp\\\\capture-screen.ps1\" -OutPath \"$sp\\\\cat-day17-screen.png\")",
+      "PowerShell($sp = \"C:\\\\Users\\\\lukas\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Projects-UniOrganiser\\\\7715de1b-290b-44da-952a-6dd0b5e16865\\\\scratchpad\"; dotnet run --project \"$sp\\\\dbcheck\\\\dbcheck.csproj\" -v q --nologo)",
+      "Bash(dotnet build *)"
     ]
   }
 }

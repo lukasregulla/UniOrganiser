@@ -4,6 +4,8 @@ namespace UniOrganiser.Services;
 
 public class RecurrenceService(DatabaseService db)
 {
+    // Horizon for rules that aren't bound to a semester. Semester-bound rules
+    // materialise their whole semester instead - that's bounded by definition.
     private const int MaterialisationWindowDays = 84;
 
     private static readonly Dictionary<string, DayOfWeek> DayAbbreviations = new(StringComparer.OrdinalIgnoreCase)
@@ -20,19 +22,43 @@ public class RecurrenceService(DatabaseService db)
     public void MaterialiseAll()
     {
         var today = DateTime.Today;
-        var windowEnd = today.AddDays(MaterialisationWindowDays);
+        var rollingEnd = today.AddDays(MaterialisationWindowDays);
+        var semesters = db.GetSemesters().ToDictionary(s => s.Id);
+        var breaksBySemester = db.GetAllBreaks()
+            .GroupBy(b => b.SemesterId)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         foreach (var rule in db.GetRules())
         {
-            if (rule.EndDate.HasValue && rule.EndDate.Value.Date < today) continue;
+            // A dangling SemesterId (semester deleted out from under the rule)
+            // degrades to the rolling window rather than dropping the series.
+            var semester = rule.SemesterId is int semesterId && semesters.TryGetValue(semesterId, out var found)
+                ? found
+                : null;
+
+            // Where the series genuinely ends, versus how far ahead we bother
+            // generating. For a semester-bound rule they coincide; for anything
+            // else the rolling window is only a generation horizon, so pruning
+            // against it would delete perfectly valid future occurrences.
+            var seriesEnd = MinDate(semester?.EndDate.Date, rule.EndDate?.Date) ?? DateTime.MaxValue.Date;
+            var horizon = semester?.EndDate.Date ?? rollingEnd;
+            var generationEnd = seriesEnd < horizon ? seriesEnd : horizon;
+
+            var breaks = semester is not null && breaksBySemester.TryGetValue(semester.Id, out var semesterBreaks)
+                ? semesterBreaks
+                : null;
 
             var occurrences = db.GetOccurrences(rule.Id);
             if (occurrences.Count == 0) continue;
 
+            PruneStaleOccurrences(occurrences, today, seriesEnd, breaks);
+
+            if (generationEnd < today) continue;
+
             var template = occurrences[0];
             var existingDates = occurrences.Select(o => o.DueDate.Date).ToHashSet();
 
-            foreach (var date in EnumerateDates(rule, today, windowEnd))
+            foreach (var date in EnumerateDates(rule, today, generationEnd, breaks))
             {
                 if (existingDates.Contains(date)) continue;
 
@@ -41,6 +67,7 @@ public class RecurrenceService(DatabaseService db)
                     Title = template.Title,
                     Description = template.Description,
                     SubjectId = template.SubjectId,
+                    CategoryId = template.CategoryId,
                     DueDate = date,
                     DueTime = template.DueTime,
                     IsCompleted = false,
@@ -52,7 +79,53 @@ public class RecurrenceService(DatabaseService db)
         }
     }
 
-    public static IEnumerable<DateTime> EnumerateDates(RecurrenceRule rule, DateTime from, DateTime to)
+    // Materialisation only ever adds, so attaching a semester to an existing
+    // series, adding a break, or pulling a semester's end date in can strand
+    // rows that no longer belong. Drop those, but never the earliest one:
+    // MaterialiseAll reads its template off occurrences[0] and abandons any
+    // rule that has none left, which would kill the series permanently.
+    private static DateTime? MinDate(DateTime? a, DateTime? b)
+    {
+        if (a is null) return b;
+        if (b is null) return a;
+        return a.Value < b.Value ? a : b;
+    }
+
+    private void PruneStaleOccurrences(List<TaskItem> occurrences, DateTime today, DateTime seriesEnd,
+        IReadOnlyList<SemesterBreak>? breaks)
+    {
+        for (var i = 1; i < occurrences.Count; i++)
+        {
+            var occurrence = occurrences[i];
+            if (occurrence.DueDate.Date <= today) continue;
+            if (occurrence.IsCompleted || occurrence.IsCancelledOccurrence) continue;
+
+            var stale = occurrence.DueDate.Date > seriesEnd
+                || (breaks is not null && FallsInBreak(occurrence.DueDate.Date, breaks));
+            if (!stale) continue;
+
+            db.DeleteTask(occurrence.Id);
+            occurrences.RemoveAt(i);
+            i--;
+        }
+    }
+
+    private static bool FallsInBreak(DateTime date, IReadOnlyList<SemesterBreak> breaks) =>
+        breaks.Any(b => date >= b.StartDate.Date && date <= b.EndDate.Date);
+
+    // Break dates are skipped, not shifted: a weekly task simply has no
+    // occurrence that week and the series still ends where it would have.
+    public static IEnumerable<DateTime> EnumerateDates(RecurrenceRule rule, DateTime from, DateTime to,
+        IReadOnlyList<SemesterBreak>? breaks = null)
+    {
+        foreach (var date in EnumeratePattern(rule, from, to))
+        {
+            if (breaks is not null && FallsInBreak(date, breaks)) continue;
+            yield return date;
+        }
+    }
+
+    private static IEnumerable<DateTime> EnumeratePattern(RecurrenceRule rule, DateTime from, DateTime to)
     {
         var start = rule.StartDate.Date > from ? rule.StartDate.Date : from;
         var end = rule.EndDate.HasValue && rule.EndDate.Value.Date < to ? rule.EndDate.Value.Date : to;
@@ -91,7 +164,7 @@ public class RecurrenceService(DatabaseService db)
     // edited occurrence, spin up a new rule from that date with the new pattern,
     // and re-point the edited row (and future ones) at it.
     public void SplitRuleForFutureEdit(TaskItem editedOccurrence, RecurrenceRule oldRule,
-        RecurrenceFrequency newFrequency, string? newDaysOfWeekCsv, DateTime? newEndDate)
+        RecurrenceFrequency newFrequency, string? newDaysOfWeekCsv, DateTime? newEndDate, int? newSemesterId)
     {
         oldRule.EndDate = editedOccurrence.DueDate.AddDays(-1);
         db.SaveRule(oldRule);
@@ -102,6 +175,7 @@ public class RecurrenceService(DatabaseService db)
             DaysOfWeekCsv = newDaysOfWeekCsv,
             StartDate = editedOccurrence.DueDate,
             EndDate = newEndDate,
+            SemesterId = newSemesterId,
         };
         db.SaveRule(newRule);
 

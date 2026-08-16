@@ -106,12 +106,23 @@
                     </Button>
 
                     <Button Style="{StaticResource NavBarItem}"
-                            Tag="{Binding IsSubjectsActive}"
-                            AutomationProperties.Name="Subjects"
-                            Command="{Binding ShowSubjectsCommand}">
+                            Tag="{Binding IsTagsActive}"
+                            AutomationProperties.Name="Tags"
+                            Command="{Binding ShowTagsCommand}">
                         <StackPanel Orientation="Horizontal">
                             <ui:SymbolIcon Symbol="TagMultiple24" Margin="0,0,8,0" />
-                            <TextBlock Text="Subjects" Style="{StaticResource BodyTextBlockStyle}"
+                            <TextBlock Text="Tags" Style="{StaticResource BodyTextBlockStyle}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Style="{StaticResource NavBarItem}"
+                            Tag="{Binding IsSemestersActive}"
+                            AutomationProperties.Name="Semesters"
+                            Command="{Binding ShowSemestersCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="CalendarClock24" Margin="0,0,8,0" />
+                            <TextBlock Text="Semesters" Style="{StaticResource BodyTextBlockStyle}"
                                        VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>

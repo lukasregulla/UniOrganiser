@@ -8,6 +8,13 @@
              d:DesignWidth="800" d:DesignHeight="600">
     <Grid Margin="24">
         <Grid.Resources>
+            <Style x:Key="FilterRowLabel" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Width" Value="72" />
+                <Setter Property="Margin" Value="0,0,16,0" />
+            </Style>
+
             <CollectionViewSource x:Key="GroupedTasks" Source="{Binding Items}">
                 <CollectionViewSource.GroupDescriptions>
                     <PropertyGroupDescription PropertyName="WeekLabel" />
@@ -15,6 +22,7 @@
             </CollectionViewSource>
         </Grid.Resources>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -39,13 +47,10 @@
             <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="Tasks" VerticalAlignment="Center" />
         </DockPanel>
 
-        <DockPanel Grid.Row="1" Margin="0,0,0,16">
+        <DockPanel Grid.Row="1" Margin="0,0,0,8">
             <TextBlock DockPanel.Dock="Left"
                        Text="Subjects"
-                       Style="{StaticResource CaptionTextBlockStyle}"
-                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                       VerticalAlignment="Center"
-                       Margin="0,0,16,0" />
+                       Style="{StaticResource FilterRowLabel}" />
             <ItemsControl ItemsSource="{Binding SubjectToggles}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -66,7 +71,34 @@
             </ItemsControl>
         </DockPanel>
 
-        <Grid Grid.Row="2">
+        <DockPanel Grid.Row="2" Margin="0,0,0,16">
+            <TextBlock DockPanel.Dock="Left"
+                       Text="Categories"
+                       Style="{StaticResource FilterRowLabel}" />
+            <ItemsControl ItemsSource="{Binding CategoryToggles}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <CheckBox Margin="0,0,16,0" IsChecked="{Binding IsSelected}">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,8,0"
+                                        CornerRadius="2"
+                                        Background="{Binding ColourHex, Converter={StaticResource HexToBrushConverter}}" />
+                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </CheckBox>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </DockPanel>
+
+        <Grid Grid.Row="3">
+            <!-- Two empty states: an AND-combined filter pair makes "no matches"
+                 easy to hit, and that reads very differently from "no tasks". -->
             <TextBlock Text="No tasks yet. Add one to get started."
                        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,16,0,0"
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}">
@@ -74,9 +106,32 @@
                     <Style TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
                         <Setter Property="Visibility" Value="Collapsed" />
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding Items.Count}" Value="0">
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Items.Count}" Value="0" />
+                                    <Condition Binding="{Binding HasActiveFilters}" Value="False" />
+                                </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible" />
-                            </DataTrigger>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <TextBlock Text="No tasks match the current filters."
+                       HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,16,0,0"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Items.Count}" Value="0" />
+                                    <Condition Binding="{Binding HasActiveFilters}" Value="True" />
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible" />
+                            </MultiDataTrigger>
                         </Style.Triggers>
                     </Style>
                 </TextBlock.Style>
@@ -142,6 +197,13 @@
                                                     <Setter Property="VerticalAlignment" Value="Center" />
                                                 </Style>
                                             </StackPanel.Resources>
+                                            <!-- Collapse the host too, else the margin leaves a
+                                                 gap on uncategorised tasks. -->
+                                            <ContentControl Content="{Binding}"
+                                                            ContentTemplate="{StaticResource CategoryPillTemplate}"
+                                                            Margin="0,0,16,0"
+                                                            VerticalAlignment="Center"
+                                                            Visibility="{Binding HasCategory, Converter={StaticResource BoolToVisibilityConverter}}" />
                                             <TextBlock Text="{Binding SubjectName, TargetNullValue='No subject'}" />
                                             <TextBlock Text="{Binding Task.DueDate, StringFormat='ddd, d MMM'}" Margin="0,0,8,0" />
                                             <TextBlock Text="{Binding Task.DueTime, StringFormat='{}{0:hh\\:mm}'}" />

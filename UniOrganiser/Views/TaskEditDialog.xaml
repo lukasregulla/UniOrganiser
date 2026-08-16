@@ -19,6 +19,24 @@
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
             <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
+
+        <!-- Circle = subject, rounded square = category, matching the list and
+             calendar marks, so the two axes stay distinguishable while tagging. -->
+        <DataTemplate x:Key="SubjectOptionTemplate">
+            <StackPanel Orientation="Horizontal">
+                <Ellipse Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,8,0"
+                         Fill="{Binding ColourHex, Converter={StaticResource HexToBrushConverter}}" />
+                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="CategoryOptionTemplate">
+            <StackPanel Orientation="Horizontal">
+                <Border Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,8,0" CornerRadius="2"
+                        Background="{Binding ColourHex, Converter={StaticResource HexToBrushConverter}}" />
+                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+            </StackPanel>
+        </DataTemplate>
     </ui:FluentWindow.Resources>
 
     <Grid>
@@ -47,7 +65,13 @@
 
                 <TextBlock Text="Subject" Style="{StaticResource FieldLabel}" />
                 <ComboBox ItemsSource="{Binding SubjectOptions}" SelectedItem="{Binding SelectedSubjectOption}"
-                          DisplayMemberPath="Name" HorizontalAlignment="Stretch" Margin="0,0,0,16" />
+                          ItemTemplate="{StaticResource SubjectOptionTemplate}"
+                          HorizontalAlignment="Stretch" Margin="0,0,0,16" />
+
+                <TextBlock Text="Category" Style="{StaticResource FieldLabel}" />
+                <ComboBox ItemsSource="{Binding CategoryOptions}" SelectedItem="{Binding SelectedCategoryOption}"
+                          ItemTemplate="{StaticResource CategoryOptionTemplate}"
+                          HorizontalAlignment="Stretch" Margin="0,0,0,16" />
 
                 <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
@@ -112,11 +136,45 @@
                         </StackPanel>
 
                         <StackPanel Visibility="{Binding ShowRepeatEndDate, Converter={StaticResource BoolToVisibilityConverter}}">
-                            <TextBlock Text="Repeat ends (optional)" Style="{StaticResource FieldLabel}" />
-                            <DatePicker SelectedDate="{Binding RepeatEndDate}"
-                                        FirstDayOfWeek="Monday"
-                                        SelectedDateFormat="Short"
-                                        HorizontalAlignment="Left" />
+                            <TextBlock Text="Repeat range" Style="{StaticResource FieldLabel}" />
+                            <ComboBox ItemsSource="{Binding RepeatRangeOptions}"
+                                      SelectedItem="{Binding SelectedRepeatRangeOption}"
+                                      DisplayMemberPath="Name"
+                                      HorizontalAlignment="Stretch" />
+
+                            <TextBlock Text="{Binding SelectedSemesterHint}"
+                                       Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,8,0,0"
+                                       Visibility="{Binding SelectedSemesterHint, Converter={StaticResource NullToVisibilityConverter}}" />
+
+                            <Grid Margin="0,16,0,0"
+                                  Visibility="{Binding ShowCustomRange, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="16" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Repeats from" Style="{StaticResource FieldLabel}" />
+                                    <!-- Bound to DueDate on purpose: the series always starts at the
+                                         first occurrence, so a separate start date could contradict it. -->
+                                    <DatePicker SelectedDate="{Binding DueDate}"
+                                                FirstDayOfWeek="Monday"
+                                                SelectedDateFormat="Short"
+                                                HorizontalAlignment="Stretch" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Repeats until" Style="{StaticResource FieldLabel}" />
+                                    <DatePicker SelectedDate="{Binding RepeatEndDate}"
+                                                FirstDayOfWeek="Monday"
+                                                SelectedDateFormat="Short"
+                                                HorizontalAlignment="Stretch" />
+                                </StackPanel>
+                            </Grid>
                         </StackPanel>
                     </StackPanel>
                 </ui:CardExpander>

@@ -15,10 +15,15 @@ public partial class TaskListViewModel : ObservableObject
     private readonly RecurrenceService _recurrenceService;
 
     public ObservableCollection<TaskListItemViewModel> Items { get; } = [];
-    public ObservableCollection<SubjectToggle> SubjectToggles { get; } = [];
+    public ObservableCollection<FilterToggle> SubjectToggles { get; } = [];
+    public ObservableCollection<FilterToggle> CategoryToggles { get; } = [];
 
     [ObservableProperty]
     private bool showCompleted;
+
+    // Drives which empty-state message shows: "nothing yet" vs "nothing matches".
+    [ObservableProperty]
+    private bool hasActiveFilters;
 
     public TaskListViewModel(DatabaseService db, RecurrenceService recurrenceService)
     {
@@ -36,14 +41,25 @@ public partial class TaskListViewModel : ObservableObject
         var endOfWeek = startOfWeek.AddDays(7); // exclusive
 
         var subjects = _db.GetSubjects().ToDictionary(s => s.Id);
-        RefreshSubjectToggles(subjects.Values);
+        var categories = _db.GetCategories().ToDictionary(c => c.Id);
+        var semesters = _db.GetSemesters();
+        var breaksBySemester = _db.GetAllBreaks()
+            .GroupBy(b => b.SemesterId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        RefreshToggles(SubjectToggles, "No subject",
+            subjects.Values.OrderBy(s => s.Name).Select(s => (s.Id, s.Name, s.ColourHex)));
+        RefreshToggles(CategoryToggles, "No category",
+            categories.Values.OrderBy(c => c.Name).Select(c => (c.Id, c.Name, c.ColourHex)));
 
-        var selectedSubjectIds = SubjectToggles.Where(t => t.IsSelected).Select(t => t.SubjectId).ToHashSet();
+        var selectedSubjectIds = SubjectToggles.Where(t => t.IsSelected).Select(t => t.Id).ToHashSet();
+        var selectedCategoryIds = CategoryToggles.Where(t => t.IsSelected).Select(t => t.Id).ToHashSet();
+        HasActiveFilters = selectedSubjectIds.Count > 0 || selectedCategoryIds.Count > 0;
 
         var tasks = _db.GetTasks()
             .Where(t => !t.IsCancelledOccurrence)
             .Where(t => ShowCompleted || !t.IsCompleted)
             .Where(t => selectedSubjectIds.Count == 0 || selectedSubjectIds.Contains(t.SubjectId))
+            .Where(t => selectedCategoryIds.Count == 0 || selectedCategoryIds.Contains(t.CategoryId))
             .Where(t => t.RecurrenceRuleId == null
                 || (t.DueDate >= startOfWeek && t.DueDate < endOfWeek)
                 || (t.DueDate < startOfWeek && !t.IsCompleted))
@@ -55,40 +71,38 @@ public partial class TaskListViewModel : ObservableObject
         foreach (var task in tasks)
         {
             subjects.TryGetValue(task.SubjectId ?? -1, out var subject);
-            Items.Add(new TaskListItemViewModel(task, subject));
+            categories.TryGetValue(task.CategoryId ?? -1, out var category);
+            var weekLabel = SemesterCalendar.WeekLabel(task.DueDate, semesters, breaksBySemester);
+            Items.Add(new TaskListItemViewModel(task, subject, category, weekLabel));
         }
     }
 
-    private void RefreshSubjectToggles(IEnumerable<Subject> subjects)
+    private void RefreshToggles(ObservableCollection<FilterToggle> toggles, string noneLabel,
+        IEnumerable<(int Id, string Name, string ColourHex)> items)
     {
-        var previouslySelected = SubjectToggles.Where(t => t.IsSelected).Select(t => t.SubjectId).ToHashSet();
+        var previouslySelected = toggles.Where(t => t.IsSelected).Select(t => t.Id).ToHashSet();
 
-        foreach (var toggle in SubjectToggles)
-            toggle.PropertyChanged -= OnSubjectToggleChanged;
-        SubjectToggles.Clear();
+        foreach (var toggle in toggles)
+            toggle.PropertyChanged -= OnFilterToggleChanged;
+        toggles.Clear();
 
-        SubjectToggles.Add(new SubjectToggle(null, "No subject", null) { IsSelected = previouslySelected.Contains(null) });
-        foreach (var subject in subjects.OrderBy(s => s.Name))
-        {
-            SubjectToggles.Add(new SubjectToggle(subject.Id, subject.Name, subject.ColourHex)
-            {
-                IsSelected = previouslySelected.Contains(subject.Id)
-            });
-        }
+        toggles.Add(new FilterToggle(null, noneLabel, null) { IsSelected = previouslySelected.Contains(null) });
+        foreach (var (id, name, colourHex) in items)
+            toggles.Add(new FilterToggle(id, name, colourHex) { IsSelected = previouslySelected.Contains(id) });
 
-        foreach (var toggle in SubjectToggles)
-            toggle.PropertyChanged += OnSubjectToggleChanged;
+        foreach (var toggle in toggles)
+            toggle.PropertyChanged += OnFilterToggleChanged;
     }
 
-    private void OnSubjectToggleChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnFilterToggleChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(SubjectToggle.IsSelected)) Load();
+        if (e.PropertyName == nameof(FilterToggle.IsSelected)) Load();
     }
 
     [RelayCommand]
     private void AddTask()
     {
-        var vm = new TaskEditViewModel(_db, _recurrenceService, null, _db.GetSubjects());
+        var vm = new TaskEditViewModel(_db, _recurrenceService, null, _db.GetSubjects(), _db.GetCategories());
         var dialog = new TaskEditDialog(vm) { Owner = Application.Current.MainWindow };
         if (dialog.ShowDialog() == true) Load();
     }
@@ -96,7 +110,7 @@ public partial class TaskListViewModel : ObservableObject
     [RelayCommand]
     private void EditTask(TaskListItemViewModel item)
     {
-        var vm = new TaskEditViewModel(_db, _recurrenceService, item.Task, _db.GetSubjects());
+        var vm = new TaskEditViewModel(_db, _recurrenceService, item.Task, _db.GetSubjects(), _db.GetCategories());
         var dialog = new TaskEditDialog(vm) { Owner = Application.Current.MainWindow };
         if (dialog.ShowDialog() == true) Load();
     }

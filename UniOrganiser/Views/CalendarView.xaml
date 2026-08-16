@@ -78,21 +78,43 @@
                                             <ControlTemplate TargetType="Button">
                                                 <!-- Grid, not StackPanel: the title column must be
                                                      width-constrained for TextTrimming to engage. -->
-                                                <Border Background="Transparent">
+                                                <Border Background="Transparent" ToolTip="{Binding TagTooltip}">
                                                     <Grid>
                                                         <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
                                                             <ColumnDefinition Width="Auto" />
                                                             <ColumnDefinition Width="*" />
                                                             <ColumnDefinition Width="Auto" />
                                                         </Grid.ColumnDefinitions>
-                                                        <Ellipse Grid.Column="0" Width="8" Height="8"
+                                                        <!-- Category as a bar, subject as a dot: no room for a
+                                                             pill here, and two dots would be unreadable.
+                                                             Stays transparent when uncategorised so the chips
+                                                             below it keep their left alignment. -->
+                                                        <Border Grid.Column="0" Width="3" Margin="0,0,6,0"
+                                                                CornerRadius="2">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Background"
+                                                                            Value="{Binding CategoryColourHex, Converter={StaticResource HexToBrushConverter}}" />
+                                                                    <Style.Triggers>
+                                                                        <!-- Transparent rather than collapsed: the bar
+                                                                             keeps its width so every chip in the cell
+                                                                             stays left-aligned. -->
+                                                                        <DataTrigger Binding="{Binding HasCategory}" Value="False">
+                                                                            <Setter Property="Background" Value="Transparent" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                        </Border>
+                                                        <Ellipse Grid.Column="1" Width="8" Height="8"
                                                                  VerticalAlignment="Center" Margin="0,0,6,0"
                                                                  Fill="{Binding SubjectColourHex, Converter={StaticResource HexToBrushConverter}}" />
-                                                        <TextBlock Grid.Column="1" Text="{Binding Task.Title}"
+                                                        <TextBlock Grid.Column="2" Text="{Binding Task.Title}"
                                                                    Style="{StaticResource CaptionTextBlockStyle}"
                                                                    TextTrimming="CharacterEllipsis"
                                                                    VerticalAlignment="Center" />
-                                                        <ui:SymbolIcon Grid.Column="2" Symbol="ArrowRepeatAll24" FontSize="11"
+                                                        <ui:SymbolIcon Grid.Column="3" Symbol="ArrowRepeatAll24" FontSize="11"
                                                                        Margin="4,0,0,0" VerticalAlignment="Center"
                                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                                        Visibility="{Binding IsRecurring, Converter={StaticResource BoolToVisibilityConverter}}" />
@@ -236,10 +258,17 @@
                                                                    ToolTip="Repeating task"
                                                                    Visibility="{Binding IsRecurring, Converter={StaticResource BoolToVisibilityConverter}}" />
                                                 </StackPanel>
-                                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
-                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                           Margin="16,8,0,8"
-                                                           Text="{Binding Task.DueTime, StringFormat='{}{0:hh\\:mm}'}" />
+                                                <StackPanel Orientation="Horizontal" Margin="16,8,0,8">
+                                                    <ContentControl Content="{Binding}"
+                                                                    ContentTemplate="{StaticResource CategoryPillTemplate}"
+                                                                    Margin="0,0,8,0"
+                                                                    VerticalAlignment="Center"
+                                                                    Visibility="{Binding HasCategory, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                               VerticalAlignment="Center"
+                                                               Text="{Binding Task.DueTime, StringFormat='{}{0:hh\\:mm}'}" />
+                                                </StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="16,0,0,0">
                                                     <ui:Button Appearance="Secondary"
                                                                ToolTip="Edit"

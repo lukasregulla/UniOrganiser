@@ -21,14 +21,34 @@
             <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
             <converters:IsSelectedDayConverter x:Key="IsSelectedDayConverter" />
 
+            <!-- Category chip, shared by the task list rows and the calendar's day
+                 panel. Bound against TaskListItemViewModel; collapses when the task
+                 has no category. A pill, never a dot - dots mean subject. -->
+            <DataTemplate x:Key="CategoryPillTemplate">
+                <Border Background="{Binding CategoryColourHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=0.15}"
+                        BorderBrush="{Binding CategoryColourHex, Converter={StaticResource HexToBrushConverter}}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource ControlCornerRadius}"
+                        Padding="8,2"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding HasCategory, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <TextBlock Text="{Binding CategoryName}"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{Binding CategoryColourHex, Converter={StaticResource HexToBrushConverter}}" />
+                </Border>
+            </DataTemplate>
+
             <DataTemplate DataType="{x:Type vm:TaskListViewModel}">
                 <views:TaskListView />
             </DataTemplate>
             <DataTemplate DataType="{x:Type vm:CalendarViewModel}">
                 <views:CalendarView />
             </DataTemplate>
-            <DataTemplate DataType="{x:Type vm:SubjectsViewModel}">
-                <views:SubjectsView />
+            <DataTemplate DataType="{x:Type vm:TagsViewModel}">
+                <views:TagsView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SemestersViewModel}">
+                <views:SemestersView />
             </DataTemplate>
         </ResourceDictionary>
     </Application.Resources>
