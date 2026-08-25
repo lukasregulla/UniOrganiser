@@ -114,8 +114,33 @@
                     </ui:CardExpander.Header>
 
                     <StackPanel>
-                        <ComboBox ItemsSource="{Binding RepeatOptions}" SelectedItem="{Binding SelectedRepeatOption}"
-                                  HorizontalAlignment="Stretch" Margin="0,0,0,16" />
+                        <StackPanel Margin="0,0,0,16">
+                            <RadioButton Content="Does not repeat"
+                                         GroupName="RepeatFrequency"
+                                         HorizontalAlignment="Left"
+                                         IsChecked="{Binding RepeatNone}" />
+                            <RadioButton Content="Daily"
+                                         GroupName="RepeatFrequency"
+                                         HorizontalAlignment="Left"
+                                         Margin="0,8,0,0"
+                                         IsChecked="{Binding RepeatDaily}" />
+                            <RadioButton Content="Weekly"
+                                         GroupName="RepeatFrequency"
+                                         HorizontalAlignment="Left"
+                                         Margin="0,8,0,0"
+                                         IsChecked="{Binding RepeatWeekly}" />
+                        </StackPanel>
+
+                        <StackPanel Visibility="{Binding RepeatWeekly, Converter={StaticResource BoolToVisibilityConverter}}"
+                                    Margin="0,0,0,16">
+                            <ui:ToggleSwitch Content="Repeat on specific days"
+                                             IsChecked="{Binding RepeatOnSpecificDays}" />
+                            <TextBlock Text="Off: repeats every week on the same day as the due date."
+                                       Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,8,0,0" />
+                        </StackPanel>
 
                         <StackPanel Visibility="{Binding ShowDaysPicker, Converter={StaticResource BoolToVisibilityConverter}}"
                                     Margin="0,0,0,16">

@@ -57,14 +57,17 @@ public partial class TaskListViewModel : ObservableObject
 
         var tasks = _db.GetTasks()
             .Where(t => !t.IsCancelledOccurrence)
-            .Where(t => ShowCompleted || !t.IsCompleted)
+            // "Show completed" is for finished one-off work; a term of ticked-off lectures
+            // would bury it, so completed occurrences stay hidden either way.
+            .Where(t => !t.IsCompleted || (ShowCompleted && t.RecurrenceRuleId == null))
             .Where(t => selectedSubjectIds.Count == 0 || selectedSubjectIds.Contains(t.SubjectId))
             .Where(t => selectedCategoryIds.Count == 0 || selectedCategoryIds.Contains(t.CategoryId))
-            .Where(t => t.RecurrenceRuleId == null
-                || (t.DueDate >= startOfWeek && t.DueDate < endOfWeek)
-                || (t.DueDate < startOfWeek && !t.IsCompleted))
-            .OrderBy(t => t.IsCompleted)
-            .ThenBy(t => t.DueDate)
+            // Recurring occurrences run to the end of the current week and no further -
+            // a whole semester of future lectures would swamp the list.
+            .Where(t => t.RecurrenceRuleId == null || t.DueDate < endOfWeek)
+            // Date first: the view groups by week, and a group is created wherever its
+            // first item lands, so a completed-last sort would strand the older weeks.
+            .OrderBy(t => t.DueDate)
             .ThenBy(t => t.DueTime ?? TimeSpan.MaxValue);
 
         Items.Clear();

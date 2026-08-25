@@ -5,7 +5,8 @@ namespace UniOrganiser.Services;
 public class RecurrenceService(DatabaseService db)
 {
     // Horizon for rules that aren't bound to a semester. Semester-bound rules
-    // materialise their whole semester instead - that's bounded by definition.
+    // materialise their whole semester instead, start to end - that's bounded
+    // by definition.
     private const int MaterialisationWindowDays = 84;
 
     private static readonly Dictionary<string, DayOfWeek> DayAbbreviations = new(StringComparer.OrdinalIgnoreCase)
@@ -44,6 +45,11 @@ public class RecurrenceService(DatabaseService db)
             var horizon = semester?.EndDate.Date ?? rollingEnd;
             var generationEnd = seriesEnd < horizon ? seriesEnd : horizon;
 
+            // A semester-bound rule generates across its whole range rather than from
+            // today forward, so a series seeded part-way through the term has no gap
+            // behind it. Anything else keeps the rolling window.
+            var generationStart = semester?.StartDate.Date ?? today;
+
             var breaks = semester is not null && breaksBySemester.TryGetValue(semester.Id, out var semesterBreaks)
                 ? semesterBreaks
                 : null;
@@ -53,12 +59,12 @@ public class RecurrenceService(DatabaseService db)
 
             PruneStaleOccurrences(occurrences, today, seriesEnd, breaks);
 
-            if (generationEnd < today) continue;
+            if (generationEnd < generationStart) continue;
 
             var template = occurrences[0];
             var existingDates = occurrences.Select(o => o.DueDate.Date).ToHashSet();
 
-            foreach (var date in EnumerateDates(rule, today, generationEnd, breaks))
+            foreach (var date in EnumerateDates(rule, generationStart, generationEnd, breaks))
             {
                 if (existingDates.Contains(date)) continue;
 
@@ -116,18 +122,18 @@ public class RecurrenceService(DatabaseService db)
     // Break dates are skipped, not shifted: a weekly task simply has no
     // occurrence that week and the series still ends where it would have.
     public static IEnumerable<DateTime> EnumerateDates(RecurrenceRule rule, DateTime from, DateTime to,
-        IReadOnlyList<SemesterBreak>? breaks = null)
+        IReadOnlyList<SemesterBreak>? breaks = null, bool ignoreRuleStart = false)
     {
-        foreach (var date in EnumeratePattern(rule, from, to))
+        foreach (var date in EnumeratePattern(rule, from, to, ignoreRuleStart))
         {
             if (breaks is not null && FallsInBreak(date, breaks)) continue;
             yield return date;
         }
     }
 
-    private static IEnumerable<DateTime> EnumeratePattern(RecurrenceRule rule, DateTime from, DateTime to)
+    private static IEnumerable<DateTime> EnumeratePattern(RecurrenceRule rule, DateTime from, DateTime to, bool ignoreRuleStart = false)
     {
-        var start = rule.StartDate.Date > from ? rule.StartDate.Date : from;
+        var start = !ignoreRuleStart && rule.StartDate.Date > from ? rule.StartDate.Date : from;
         var end = rule.EndDate.HasValue && rule.EndDate.Value.Date < to ? rule.EndDate.Value.Date : to;
         if (start > end) yield break;
 
@@ -140,6 +146,7 @@ public class RecurrenceService(DatabaseService db)
 
             case RecurrenceFrequency.Weekly when string.IsNullOrWhiteSpace(rule.DaysOfWeekCsv):
                 var anchor = rule.StartDate.Date;
+                while (anchor > start) anchor = anchor.AddDays(-7);
                 while (anchor < start) anchor = anchor.AddDays(7);
                 for (var d = anchor; d <= end; d = d.AddDays(7))
                     yield return d;

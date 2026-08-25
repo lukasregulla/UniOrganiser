@@ -31,8 +31,6 @@ public partial class TaskEditViewModel : ObservableObject
 
     public Priority[] PriorityOptions { get; } = Enum.GetValues<Priority>();
 
-    public RepeatOption[] RepeatOptions { get; } = Enum.GetValues<RepeatOption>();
-
     public List<DayToggle> DayToggles { get; } =
     [
         new("Mon", DayOfWeek.Monday),
@@ -94,6 +92,39 @@ public partial class TaskEditViewModel : ObservableObject
     [ObservableProperty]
     private bool applyToAllFuture;
 
+    // Opt-in that promotes plain Weekly to WeeklyOnSpecificDays. Off means "same
+    // weekday as the due date", which the null DaysOfWeekCsv anchor branch handles.
+    [ObservableProperty]
+    private bool repeatOnSpecificDays;
+
+    // The frequency is picked with radio buttons rather than a dropdown: "Weekly" and
+    // "weekly on specific days" read almost identically in a list, and landing on the
+    // wrong one is silent. SelectedRepeatOption stays the single source of truth.
+    public bool RepeatNone
+    {
+        get => SelectedRepeatOption == RepeatOption.None;
+        set { if (value) SelectedRepeatOption = RepeatOption.None; }
+    }
+
+    public bool RepeatDaily
+    {
+        get => SelectedRepeatOption == RepeatOption.Daily;
+        set { if (value) SelectedRepeatOption = RepeatOption.Daily; }
+    }
+
+    // Covers both weekly modes - RepeatOnSpecificDays chooses between them.
+    public bool RepeatWeekly
+    {
+        get => SelectedRepeatOption is RepeatOption.Weekly or RepeatOption.WeeklyOnSpecificDays;
+        set
+        {
+            if (value)
+                SelectedRepeatOption = RepeatOnSpecificDays
+                    ? RepeatOption.WeeklyOnSpecificDays
+                    : RepeatOption.Weekly;
+        }
+    }
+
     public bool ShowDaysPicker => SelectedRepeatOption == RepeatOption.WeeklyOnSpecificDays;
 
     public bool ShowRepeatEndDate => SelectedRepeatOption != RepeatOption.None;
@@ -118,9 +149,25 @@ public partial class TaskEditViewModel : ObservableObject
 
     partial void OnSelectedRepeatOptionChanged(RepeatOption value)
     {
+        OnPropertyChanged(nameof(RepeatNone));
+        OnPropertyChanged(nameof(RepeatDaily));
+        OnPropertyChanged(nameof(RepeatWeekly));
         OnPropertyChanged(nameof(ShowDaysPicker));
         OnPropertyChanged(nameof(ShowRepeatEndDate));
         OnPropertyChanged(nameof(ShowCustomRange));
+    }
+
+    partial void OnRepeatOnSpecificDaysChanged(bool value)
+    {
+        if (!RepeatWeekly) return;
+
+        SelectedRepeatOption = value ? RepeatOption.WeeklyOnSpecificDays : RepeatOption.Weekly;
+
+        // Start from the weekday the user already chose, so switching the picker on
+        // never lands on the "select at least one day" error with nothing ticked.
+        if (value && DayToggles.All(d => !d.IsSelected))
+            foreach (var toggle in DayToggles)
+                toggle.IsSelected = toggle.Day == DueDate.DayOfWeek;
     }
 
     partial void OnSelectedRepeatRangeOptionChanged(PickerOption? value)
@@ -195,6 +242,7 @@ public partial class TaskEditViewModel : ObservableObject
                     RecurrenceFrequency.Weekly when !string.IsNullOrWhiteSpace(rule.DaysOfWeekCsv) => RepeatOption.WeeklyOnSpecificDays,
                     _ => RepeatOption.Weekly,
                 };
+                RepeatOnSpecificDays = SelectedRepeatOption == RepeatOption.WeeklyOnSpecificDays;
                 RepeatEndDate = rule.EndDate;
                 SelectedRepeatRangeOption =
                     RepeatRangeOptions.FirstOrDefault(o => o.Id == rule.SemesterId)
@@ -202,7 +250,11 @@ public partial class TaskEditViewModel : ObservableObject
 
                 if (!string.IsNullOrWhiteSpace(rule.DaysOfWeekCsv))
                 {
-                    var selected = rule.DaysOfWeekCsv.Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+                    // Matches RecurrenceService.ParseDays, so a CSV that generates
+                    // occurrences correctly also lights up the right toggles here.
+                    var selected = rule.DaysOfWeekCsv
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
                     foreach (var toggle in DayToggles)
                         toggle.IsSelected = selected.Contains(toggle.Label);
                 }
@@ -309,7 +361,7 @@ public partial class TaskEditViewModel : ObservableObject
                 {
                     Frequency = frequency,
                     DaysOfWeekCsv = daysCsv,
-                    StartDate = task.DueDate,
+                    StartDate = SeriesAnchor(task.DueDate, semesterId, daysCsv),
                     EndDate = semesterId is null ? RepeatEndDate : null,
                     SemesterId = semesterId,
                 };
@@ -344,6 +396,24 @@ public partial class TaskEditViewModel : ObservableObject
         }
 
         RequestClose?.Invoke(this, true);
+    }
+
+    // A semester-bound series covers the whole term, so it anchors at the semester start
+    // rather than at whatever due date seeded it - materialisation treats
+    // RecurrenceRule.StartDate as a hard floor. Splitting a series for a "this and all
+    // future" edit deliberately anchors mid-term instead, which is why this only applies
+    // to a series being created here.
+    private DateTime SeriesAnchor(DateTime dueDate, int? semesterId, string? daysCsv)
+    {
+        if (semesterId is not int id || !_semestersById.TryGetValue(id, out var semester))
+            return dueDate;
+
+        var start = semester.StartDate.Date;
+        if (SelectedRepeatOption == RepeatOption.Daily || !string.IsNullOrEmpty(daysCsv))
+            return start;
+
+        // Plain weekly carries its weekday in the anchor, so that has to survive the move back.
+        return start.AddDays(((int)dueDate.DayOfWeek - (int)start.DayOfWeek + 7) % 7);
     }
 
     [RelayCommand]

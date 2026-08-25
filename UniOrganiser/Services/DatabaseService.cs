@@ -61,9 +61,7 @@ public class DatabaseService : IDisposable
         SetSetting(DefaultCategoriesSeededKey, "true");
     }
 
-    // Carries over the term the app used to hardcode, so week labels are
-    // unchanged and the Semesters page isn't empty on first launch. Once-ever,
-    // same as the category seed.
+
     private void SeedDefaultSemester()
     {
         if (GetSetting(DefaultSemesterSeededKey) == "true") return;
