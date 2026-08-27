@@ -4,6 +4,7 @@
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:b="clr-namespace:UniOrganiser.Behaviours"
                  mc:Ignorable="d"
                  Title="{Binding DialogTitle}"
                  Height="720" Width="440"
@@ -50,7 +51,7 @@
                      ShowMaximize="False"
                      ShowMinimize="False" />
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="24,8,24,24">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="24,8,24,24" b:SmoothScroll.IsEnabled="True">
             <StackPanel>
                 <TextBlock Text="Title" Style="{StaticResource FieldLabel}" />
                 <ui:TextBox Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}"

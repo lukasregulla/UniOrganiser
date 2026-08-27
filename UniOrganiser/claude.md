@@ -24,6 +24,7 @@ Guidance for Claude Code when working in this repo.
 /Views       -> XAML views, suffixed View.xaml (dialogs suffixed Dialog.xaml)
 /Services    -> DatabaseService.cs is the single source of truth for all SQLite reads/writes
 /Converters  -> IValueConverter / IMultiValueConverter helpers, registered in App.xaml
+/Behaviours  -> attached-property behaviours for view-only concerns (SmoothScroll.cs)
 ```
 
 There is no app-level theme dictionary. Colours and typography come from WPF-UI's

@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:b="clr-namespace:UniOrganiser.Behaviours"
              mc:Ignorable="d"
              d:DesignWidth="1000" d:DesignHeight="700">
     <UserControl.Resources>
@@ -173,12 +174,11 @@
                 <ColumnDefinition Width="288" />
             </Grid.ColumnDefinitions>
 
-            <!-- Transparent background so the whole area is hit-testable for wheel/swipe
-                 month navigation, including the gaps between day cells. -->
+            <!-- Transparent background so the whole area is hit-testable for swipe month
+                 navigation, including the gaps between day cells. -->
             <Border Grid.Column="0"
                     x:Name="CalendarGridHost"
-                    Background="Transparent"
-                    PreviewMouseWheel="CalendarGridHost_PreviewMouseWheel">
+                    Background="Transparent">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -221,7 +221,7 @@
                         </ui:Button>
                     </StackPanel>
 
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" b:SmoothScroll.IsEnabled="True">
                         <StackPanel>
                             <TextBlock Text="No tasks on this day."
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}">
