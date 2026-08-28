@@ -22,8 +22,11 @@ public partial class CalendarView : UserControl
     // and inertia tail alike - arrives a few ms apart, so nothing mid-gesture can reach it.
     private const int GestureGapMs = 400;
 
+    private const int NavigationLockMs = 1000;
+
     private HwndSource? _hwndSource;
     private long _lastDeltaTicks;
+    private long _lastNavigationTicks;
     private bool _gestureConsumed;
     private int _accumulatedDelta;
 
@@ -101,55 +104,137 @@ public partial class CalendarView : UserControl
         if (DataContext is not CalendarViewModel viewModel) return;
 
         var now = Environment.TickCount64;
-        var sinceLastDelta = now - _lastDeltaTicks;
+
+        var sinceLastDelta = _lastDeltaTicks == 0
+            ? long.MaxValue
+            : now - _lastDeltaTicks;
+
+        var sinceNavigation = _lastNavigationTicks == 0
+            ? long.MaxValue
+            : now - _lastNavigationTicks;
+
         _lastDeltaTicks = now;
 
         var latchBefore = _gestureConsumed;
         var accumBefore = _accumulatedDelta;
 
-        // A gap in the stream is the only thing that ends a gesture - the finger has left the
-        // trackpad and the inertia has died. A tail can never re-arm, however long it runs.
-        var cleared = sinceLastDelta > GestureGapMs;
-        if (cleared)
+        // ------------------------------------------------------------
+        // LOCKED
+        // ------------------------------------------------------------
+        if (_gestureConsumed)
         {
+            // Never unlock while we're still inside the hard lock period.
+            if (sinceNavigation < NavigationLockMs)
+            {
+                SwipeLog.Decision(
+                    sinceLastDelta,
+                    accumBefore,
+                    _accumulatedDelta,
+                    latchBefore,
+                    true,
+                    false,
+                    $"locked ({sinceNavigation}ms since navigation)");
+
+                return;
+            }
+
+            // Hard lock is over, but we ALSO require silence between
+            // horizontal-wheel messages before considering the old
+            // gesture finished.
+            if (sinceLastDelta <= GestureGapMs)
+            {
+                SwipeLog.Decision(
+                    sinceLastDelta,
+                    accumBefore,
+                    _accumulatedDelta,
+                    latchBefore,
+                    true,
+                    false,
+                    "waiting for quiet period");
+
+                return;
+            }
+
+            // We finally believe the previous gesture is finished.
+            //
+            // Discard this message too. The NEXT message must start
+            // the next gesture.
             _gestureConsumed = false;
+            _accumulatedDelta = 0;
+
+            SwipeLog.Decision(
+                sinceLastDelta,
+                accumBefore,
+                0,
+                latchBefore,
+                false,
+                true,
+                "re-armed after lock + quiet period");
+
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // ACCUMULATING A NEW GESTURE
+        // ------------------------------------------------------------
+
+        if (_accumulatedDelta != 0 &&
+            Math.Sign(delta) != Math.Sign(_accumulatedDelta))
+        {
             _accumulatedDelta = 0;
         }
 
-        if (_gestureConsumed)
-        {
-            SwipeLog.Decision(sinceLastDelta, accumBefore, _accumulatedDelta, latchBefore, _gestureConsumed, cleared, "swallowed");
-            return;
-        }
-
-        // A reversal starts a fresh count instead of cancelling out leftover delta.
-        if (Math.Sign(delta) != Math.Sign(_accumulatedDelta)) _accumulatedDelta = 0;
-
         _accumulatedDelta += delta;
+
         if (Math.Abs(_accumulatedDelta) < DeltaPerMonth)
         {
-            SwipeLog.Decision(sinceLastDelta, accumBefore, _accumulatedDelta, latchBefore, _gestureConsumed, cleared, "accumulating");
+            SwipeLog.Decision(
+                sinceLastDelta,
+                accumBefore,
+                _accumulatedDelta,
+                latchBefore,
+                false,
+                false,
+                "accumulating");
+
             return;
         }
 
-        var forward = _accumulatedDelta > 0;
-        (forward ? viewModel.NextMonthCommand : viewModel.PreviousMonthCommand).Execute(null);
+        // ------------------------------------------------------------
+        // CHANGE MONTH
+        // ------------------------------------------------------------
 
+        var forward = _accumulatedDelta > 0;
+
+        (forward
+            ? viewModel.NextMonthCommand
+            : viewModel.PreviousMonthCommand)
+            .Execute(null);
+
+        _lastNavigationTicks = now;
         _gestureConsumed = true;
+
         var accumAtStep = _accumulatedDelta;
         _accumulatedDelta = 0;
 
-        SwipeLog.Decision(sinceLastDelta, accumBefore, accumAtStep, latchBefore, _gestureConsumed, cleared,
-            forward ? "STEP +1 month" : "STEP -1 month");
+        SwipeLog.Decision(
+            sinceLastDelta,
+            accumBefore,
+            accumAtStep,
+            latchBefore,
+            true,
+            false,
+            forward
+                ? "STEP +1 month"
+                : "STEP -1 month");
     }
 }
-
-/// <summary>
-/// TEMPORARY diagnostic for the swipe-overshoot investigation. Buffers in memory because disk
-/// I/O inside the message hook would add latency to the very inter-delta gaps being measured.
-/// Remove this class, and every call to it, once the cause is identified.
-/// </summary>
-internal static class SwipeLog
+    /// <summary>
+    /// TEMPORARY diagnostic for the swipe-overshoot investigation. Buffers in memory because disk
+    /// I/O inside the message hook would add latency to the very inter-delta gaps being measured.
+    /// Remove this class, and every call to it, once the cause is identified.
+    /// </summary>
+    internal static class SwipeLog
 {
     private static readonly string Path =
         System.IO.Path.Combine(System.IO.Path.GetTempPath(), "uniorganiser-swipe.log");
